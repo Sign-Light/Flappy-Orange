@@ -326,21 +326,34 @@ const orange = {
 };
 
 // ---- Pipes generation ----
+let lastGapTop = 200; // remember previous pipe's gap position
+
 function spawnPipe(){
   const minTop = 40;
-  const maxTop = Math.max(minTop + 40, H - config.groundHeight - config.pipeGap - 40);
+  const maxTop = H - config.groundHeight - config.pipeGap - 40;
 
-  // pick random top within safe range
-  const top = Math.floor(minTop + Math.random() * (maxTop - minTop));
+  // adjust difficulty: on mobile (narrow screens), make gap larger
+  const isMobile = window.innerWidth < 500;
+  const gap = isMobile ? config.pipeGap + 30 : config.pipeGap;
+
+  // smooth transition: new gap is near the old one
+  const variation = 80; // max vertical shift between pipes
+  let top = lastGapTop + (Math.random() * variation * 2 - variation);
+
+  // clamp to safe range
+  top = Math.max(minTop, Math.min(maxTop, top));
 
   const pipe = {
     x: W + config.pipeWidth,
     top: top,
-    bottom: top + config.pipeGap,
-    passed:false
+    bottom: top + gap,
+    passed: false
   };
+
   state.pipes.push(pipe);
+  lastGapTop = top; // save for next spawn
 }
+
 
 
 // ---- Game flow handlers ----
@@ -665,4 +678,5 @@ resetToMenu();
 </script>
 </body>
 </html>
+
 
