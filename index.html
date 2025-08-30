@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Flappy Orange</title>
+<style>
+  :root{
+    --bg1: #87CEEB;
+    --bg2: #a6e1ff;
+    --panel: rgba(255,255,255,0.9);
+    --accent: #ff8c00;
+    --muted: #666;
+  }
+  html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+  body{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: linear-gradient(180deg,var(--bg1),var(--bg2));
+  }
+  .wrap{
+    width:100%;
+    max-width:520px;
+    margin:20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    border-radius:12px;
+    overflow:hidden;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02));
+  }
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 14px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  header h1{font-size:16px;margin:0;color:#222;display:flex;gap:8px;align-items:center}
+  header small{font-size:12px;color:var(--muted)}
+  #gameCanvas{display:block;width:100%;height:520px;background:transparent;touch-action:none;}
+  .ui{
+    position: absolute;
+    left:0;right:0;top:0;bottom:0;
+    pointer-events:none;
+  }
+  .centerPanel{
+    position:absolute;
+    left:50%;top:50%;
+    transform:translate(-50%,-50%);
+    background:var(--panel);
+    padding:18px 20px;
+    border-radius:10px;
+    text-align:center;
+    box-shadow:0 6px 20px rgba(0,0,0,0.12);
+    pointer-events:auto;
+  }
+  .btn{
+    display:inline-block;
+    background:var(--accent);
+    color:#fff;
+    padding:8px 14px;
+    border-radius:8px;
+    font-weight:600;
+    text-decoration:none;
+    cursor:pointer;
+    border: none;
+  }
+  .meta{
+    position:absolute; left:12px; top:12px; color:#fff; font-weight:700; text-shadow: 0 1px 1px rgba(0,0,0,0.4);
+  }
+  .scoreBubble{
+    position:absolute; right:12px; top:12px; color:#fff; font-weight:800; text-shadow: 0 1px 1px rgba(0,0,0,0.4);
+  }
+  footer{
+    padding:10px 14px;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.04));
+    border-top: 1px solid rgba(0,0,0,0.03);
+  }
+  .help{font-size:13px;color:var(--muted)}
+  .controls{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center}
+  .small{font-size:11px;color:var(--muted)}
+  @media (max-width:420px){
+    #gameCanvas{height:420px;}
+    .centerPanel{width:86%;}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap" role="application" aria-label="Flappy Orange game">
+    <header>
+      <h1>🍊 Flappy Orange <small style="font-weight:500;font-size:12px;color:#444">— tap / space to flap</small></h1>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="small" id="bestLabel">Best: 0</div>
+        <button id="muteBtn" class="btn" style="background:#555;padding:6px 10px">🔊</button>
+      </div>
+    </header>
+
+    <div style="position:relative;">
+      <canvas id="gameCanvas" width="520" height="520" aria-label="Game canvas"></canvas>
+
+      <div class="ui">
+        <div class="meta" id="metaText" style="display:none">Get ready! </div>
+        <div class="scoreBubble" id="scoreBubble" style="display:none">0</div>
+
+        <div id="startPanel" class="centerPanel" style="width:84%;max-width:420px;">
+          <h2 style="margin:6px 0">🍊 Flappy Orange</h2>
+          <p style="margin:6px 0;color:#444">Dodge the pipes. Tap/click/space to flap. Beat your best!</p>
+          <div style="margin-top:12px;display:flex;gap:10px;justify-content:center">
+            <button id="startBtn" class="btn">Start</button>
+            <button id="howBtn" class="btn" style="background:#4CAF50">How</button>
+          </div>
+        </div>
+
+        <div id="gameOverPanel" class="centerPanel" style="display:none;">
+          <h2 id="goTitle" style="margin:6px 0">Game Over</h2>
+          <p id="goScore" style="margin:6px 0;color:#444">Score: 0</p>
+          <p id="goBest" class="small" style="margin:6px 0"></p>
+          <div style="margin-top:12px;display:flex;gap:10px;justify-content:center">
+            <button id="replayBtn" class="btn">Play Again</button>
+            <button id="menuBtn" class="btn" style="background:#777">Menu</button>
+          </div>
+        </div>
+
+        <div id="howPanel" class="centerPanel" style="display:none;max-width:460px;">
+          <h3 style="margin:4px 0">How to play</h3>
+          <ul style="text-align:left;color:#444">
+            <li>Tap / Click / Press Space or ↑ to flap.</li>
+            <li>Pass through gaps between pipes to earn points.</li>
+            <li>Avoid hitting pipes or falling.</li>
+            <li>Best score is saved in your browser.</li>
+          </ul>
+          <div style="margin-top:10px">
+            <button id="howClose" class="btn">Got it</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  <footer>
+  <div class="help">
+    #Sign #OrangeDynasty #KeepSeeingSign <br>
+    <span style="font-size:12px;color:#aa0000;display:block;margin-top:4px;">
+      ⚠️ This is for fun only — no real orange rewards 🍊
+    </span>
+    <span style="font-size:12px;color:#444;display:block;margin-top:4px;">
+      By: <a href="https://orange.sign.global/app?invite-code=7CWM19M1YH" target="_blank">
+        https://orange.sign.global/app?invite-code=7CWM19M1YH
+      </a>
+    </span>
+  </div>
+  <div class="controls">
+    <span>Controls:</span> <span style="font-weight:700">Space / Click / Tap</span>
+  </div>
+</footer>
+
+
+  </div>
+
+<script>
+/* Flappy Orange — single file game
+   - Canvas rendering
+   - Basic physics
+   - Pipes generation, scoring
+   - Sound via WebAudio
+*/
+
+// ---- Config and state ----
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d', { alpha: true });
+let W = canvas.width, H = canvas.height;
+const DPR = Math.max(1, window.devicePixelRatio || 1);
+
+const config = {
+  gravity: 1100,      // px/s^2
+  flapSpeed: -360,    // px/s vertical velocity on flap
+  maxDropSpeed: 900,
+  pipeSpeed: 200,     // px/s leftward
+  pipeGap: 150,       // vertical gap
+  pipeInterval: 1500, // ms between pipes
+  pipeWidth: 78,
+  orangeRadius: 22,
+  groundHeight: 80,
+  startDelay: 300,    // ms after start to begin moving
+};
+
+let state = {
+  playing:false,
+  started:false,
+  gameOver:false,
+  score:0,
+  best: 0,
+  lastPipeTime:0,
+  pipes:[],
+  t:0,
+  dt:0,
+  lastFrame:0,
+  mute:false,
+};
+
+// load best score
+try{
+  const b = localStorage.getItem('flappy_orange_best');
+  if(b) state.best = Math.max(0, parseInt(b,10)||0);
+}catch(e){}
+
+// UI elements
+const startPanel = document.getElementById('startPanel');
+const gameOverPanel = document.getElementById('gameOverPanel');
+const howPanel = document.getElementById('howPanel');
+const startBtn = document.getElementById('startBtn');
+const howBtn = document.getElementById('howBtn');
+const howClose = document.getElementById('howClose');
+const replayBtn = document.getElementById('replayBtn');
+const menuBtn = document.getElementById('menuBtn');
+const metaText = document.getElementById('metaText');
+const scoreBubble = document.getElementById('scoreBubble');
+const bestLabel = document.getElementById('bestLabel');
+const muteBtn = document.getElementById('muteBtn');
+const goScore = document.getElementById('goScore');
+const goBest = document.getElementById('goBest');
+const goTitle = document.getElementById('goTitle');
+
+bestLabel.textContent = `Best: ${state.best}`;
+
+// ---- Responsive canvas ----
+function resizeCanvas(){
+  const rect = canvas.getBoundingClientRect();
+  W = Math.round(rect.width * DPR);
+  H = Math.round(rect.height * DPR);
+  canvas.width = W; canvas.height = H;
+  ctx.setTransform(DPR,0,0,DPR,0,0); // normalised coordinates
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// ---- WebAudio simple SFX ----
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+function ensureAudio(){
+  if(!audioCtx) audioCtx = new AudioCtx();
+}
+function playTone(type='sine', freq=440, dur=0.08, vol=0.12){
+  if(state.mute) return;
+  ensureAudio();
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.value = vol;
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start();
+  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+  o.stop(audioCtx.currentTime + dur + 0.02);
+}
+function playClick(){ playTone('triangle', 880, 0.06, 0.08); }
+function playHit(){ playTone('sawtooth', 120, 0.18, 0.18); }
+function playPoint(){ playTone('sine', 1200, 0.08, 0.14); }
+
+// ---- Game objects ----
+const orange = {
+  x: 120,
+  y: 200,
+  vy: 0,
+  angle: 0,
+  radius: config.orangeRadius,
+  alive:true,
+  update(dt){
+    if(!state.started) return;
+    this.vy += config.gravity * dt;
+    if(this.vy > config.maxDropSpeed) this.vy = config.maxDropSpeed;
+    this.y += this.vy * dt;
+
+    // rotation based on vy
+    this.angle = Math.max(-0.5, Math.min(1.2, this.vy / 600));
+
+    // ground collision
+    if(this.y + this.radius > H - config.groundHeight){
+      this.y = H - config.groundHeight - this.radius;
+      this.vy = 0;
+      this.alive = false;
+      if(!state.gameOver) onGameOver();
+    }
+    if(this.y - this.radius < 0){
+      this.y = this.radius;
+      this.vy = 0;
+    }
+  },
+  flap(){
+    this.vy = config.flapSpeed;
+    playClick();
+  },
+  draw(ctx){
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+    // body
+    const r = this.radius;
+    const grd = ctx.createRadialGradient(-r*0.2,-r*0.3, r*0.1, r*0.4, r*0.1, r*1.2);
+    grd.addColorStop(0,'#fff3d1');
+    grd.addColorStop(0.15,'#ffd48b');
+    grd.addColorStop(0.4,'#ff9f2f');
+    grd.addColorStop(1,'#e85f00');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(0,0,r,0,Math.PI*2);
+    ctx.fill();
+
+    // highlights & texture
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.beginPath();
+    ctx.ellipse(-r*0.45,-r*0.45, r*0.55, r*0.36, -0.6, 0, Math.PI*2);
+    ctx.fill();
+
+    // leaf
+    ctx.rotate(-this.angle);
+    ctx.fillStyle = '#1f7a1f';
+    ctx.beginPath();
+    ctx.ellipse(r*0.65, -r*0.9, r*0.32, r*0.16, -0.8, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+};
+
+// ---- Pipes generation ----
+function spawnPipe(){
+  const minTop = 40;
+  const maxTop = H - config.groundHeight - config.pipeGap - 40;
+  const top = minTop + Math.random() * (Math.max(0, maxTop - minTop));
+  const pipe = {
+    x: W + config.pipeWidth,
+    top: top,
+    bottom: top + config.pipeGap,
+    passed:false
+  };
+  state.pipes.push(pipe);
+}
+
+// ---- Game flow handlers ----
+function startGame(){
+  state.score = 0;
+  state.pipes = [];
+  state.started = true;
+  state.playing = true;
+  state.gameOver = false;
+  orange.x = Math.round(canvas.width / (DPR) * 0.23) || 120;
+  orange.y = H * 0.35;
+  orange.vy = 0;
+  orange.alive = true;
+  state.lastPipeTime = performance.now() - 600;
+  startPanel.style.display = 'none';
+  gameOverPanel.style.display = 'none';
+  howPanel.style.display = 'none';
+  scoreBubble.style.display = 'block';
+  metaText.style.display = 'none';
+  scoreBubble.textContent = '0';
+  // small slight delay then start spawning
+  setTimeout(()=> {
+    state.lastPipeTime = performance.now();
+  }, config.startDelay);
+  // resume audio context on user interaction if needed
+  ensureAudio();
+}
+
+function onGameOver(){
+  state.gameOver = true;
+  state.playing = false;
+  metaText.style.display = 'none';
+  gameOverPanel.style.display = 'block';
+  goScore.textContent = `Score: ${state.score}`;
+  if(state.score > state.best){
+    state.best = state.score;
+    try{ localStorage.setItem('flappy_orange_best', state.best); } catch(e){}
+    playPoint();
+  }
+  goBest.textContent = `Best: ${state.best}`;
+  bestLabel.textContent = `Best: ${state.best}`;
+  scoreBubble.style.display = 'none';
+  playHit();
+}
+
+function resetToMenu(){
+  state.started = false;
+  state.playing = false;
+  state.gameOver = false;
+  startPanel.style.display = 'block';
+  gameOverPanel.style.display = 'none';
+  howPanel.style.display = 'none';
+  scoreBubble.style.display = 'none';
+}
+
+// ---- Inputs ----
+function flapAction(){
+  if(!state.started){
+    startGame();
+  }
+  if(state.gameOver){
+    // if game over, flap -> nothing (user must click Play Again)
+    return;
+  }
+  orange.flap();
+}
+document.addEventListener('keydown', (e)=>{
+  if(e.code === 'Space' || e.code === 'ArrowUp'){
+    e.preventDefault();
+    flapAction();
+  }
+});
+canvas.addEventListener('mousedown', (e)=>{
+  flapAction();
+});
+canvas.addEventListener('touchstart', (e)=>{
+  e.preventDefault();
+  flapAction();
+}, {passive:false});
+
+startBtn.addEventListener('click', ()=> { startGame(); });
+howBtn.addEventListener('click', ()=> { startPanel.style.display='none'; howPanel.style.display='block'; });
+howClose.addEventListener('click', ()=> { howPanel.style.display='none'; startPanel.style.display='block'; });
+replayBtn.addEventListener('click', ()=> { startGame(); });
+menuBtn.addEventListener('click', ()=> { resetToMenu(); });
+
+muteBtn.addEventListener('click', ()=>{
+  state.mute = !state.mute;
+  muteBtn.textContent = state.mute ? '🔇' : '🔊';
+});
+
+// ---- Collision helpers ----
+function rectCircle(collX, collY, r, rx, ry, rw, rh){
+  // circle at (collX,collY) radius r and rectangle at rx,ry,w,h
+  const closestX = Math.max(rx, Math.min(collX, rx + rw));
+  const closestY = Math.max(ry, Math.min(collY, ry + rh));
+  const dx = collX - closestX;
+  const dy = collY - closestY;
+  return (dx*dx + dy*dy) < (r*r);
+}
+
+// ---- Main update & render ----
+function update(ts){
+  if(!state.lastFrame) state.lastFrame = ts;
+  state.dt = Math.min(0.04, (ts - state.lastFrame) / 1000);
+  state.lastFrame = ts;
+
+  // spawn pipes
+  if(state.started && !state.gameOver){
+    if(performance.now() - state.lastPipeTime > config.pipeInterval){
+      spawnPipe();
+      state.lastPipeTime = performance.now();
+    }
+    // move pipes
+    const pxs = config.pipeSpeed * state.dt;
+    for(let i=state.pipes.length-1;i>=0;i--){
+      const p = state.pipes[i];
+      p.x -= pxs;
+      // scoring: when pipe passes orange center
+      if(!p.passed && p.x + config.pipeWidth < orange.x - 6){
+        p.passed = true;
+        state.score++;
+        scoreBubble.textContent = state.score;
+        playPoint();
+      }
+      // remove offscreen
+      if(p.x + config.pipeWidth < -10){
+        state.pipes.splice(i,1);
+      }
+      // collision check
+      // top rect: x..x+pw, 0..p.top
+      if(rectCircle(orange.x, orange.y, orange.radius, p.x, 0, config.pipeWidth, p.top)){
+        if(orange.alive){ orange.alive = false; onGameOver(); }
+      }
+      // bottom rect: x..x+pw, p.bottom..H-ground
+      if(rectCircle(orange.x, orange.y, orange.radius, p.x, p.bottom, config.pipeWidth, H - config.groundHeight - p.bottom)){
+        if(orange.alive){ orange.alive = false; onGameOver(); }
+      }
+    }
+  }
+
+  // update orange physics
+  orange.update(state.dt);
+
+  render();
+
+  // continue loop
+  requestAnimationFrame(update);
+}
+
+function render(){
+  // clear
+  ctx.clearRect(0,0,canvas.width, canvas.height);
+
+  // sky gradient
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#8fd6ff');
+  g.addColorStop(1,'#bfefff');
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,canvas.width/DPR, canvas.height/DPR);
+
+  // distant hills (parallax)
+  drawHills();
+
+  // pipes
+  for(const p of state.pipes){
+    drawPipe(p);
+  }
+
+  // ground
+  drawGround();
+
+  // orange
+  orange.draw(ctx);
+
+  // overlay UI text
+  if(!state.started){
+    metaText.style.display = 'block';
+    metaText.textContent = 'Click / Tap / Space to start';
+    metaText.style.color = '#fff';
+  } else {
+    metaText.style.display = 'none';
+  }
+
+  // update score bubble style (position)
+  scoreBubble.style.display = state.started && !state.gameOver ? 'block' : scoreBubble.style.display;
+  if(state.started && !state.gameOver){
+    scoreBubble.textContent = state.score;
+  }
+}
+
+// ---- Drawing helpers ----
+function drawPipe(p){
+  const x = Math.round(p.x);
+  const pw = config.pipeWidth;
+  const topH = p.top;
+  const bottomY = p.bottom;
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.12)';
+  ctx.fillRect(x+8, 0, pw, topH);
+  ctx.fillRect(x+8, bottomY, pw, H - config.groundHeight - bottomY);
+
+  // green pipes
+  const pipeGrad = ctx.createLinearGradient(x,0,x+pw,0);
+  pipeGrad.addColorStop(0,'#2d8a2d');
+  pipeGrad.addColorStop(0.5,'#2fb02f');
+  pipeGrad.addColorStop(1,'#2a8a2a');
+  ctx.fillStyle = pipeGrad;
+
+  // top pipe
+  roundRect(ctx, x, 0, pw, topH, 8, true, true);
+  // bottom pipe
+  roundRect(ctx, x, bottomY, pw, H - config.groundHeight - bottomY, 8, true, true);
+
+  // pipe rim highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.fillRect(x+6, Math.max(0, topH - 8), pw-12, 6);
+  ctx.fillRect(x+6, bottomY, pw-12, 6);
+}
+
+function drawGround(){
+  const gh = config.groundHeight;
+  const y = H - gh;
+  ctx.fillStyle = '#e6c07a';
+  ctx.fillRect(0, y, canvas.width/DPR, gh);
+
+  // subtle stripes
+  ctx.fillStyle = 'rgba(0,0,0,0.03)';
+  for(let i=0;i<canvas.width/DPR;i+=18){
+    ctx.fillRect(i, y+2, 10, 6);
+  }
+
+  // small grass
+  ctx.fillStyle = '#3ea83e';
+  for(let i=0;i<canvas.width/DPR;i+=34){
+    ctx.beginPath();
+    ctx.moveTo(i, y+6);
+    ctx.lineTo(i+6, y-6);
+    ctx.lineTo(i+12, y+6);
+    ctx.fill();
+  }
+}
+
+function drawHills(){
+  // simple rolling hills
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = '#5cc077';
+  ctx.beginPath();
+  const steps = 8;
+  const Wt = canvas.width/DPR;
+  const Ht = canvas.height/DPR;
+  ctx.moveTo(0, Ht * 0.7);
+  for(let i=0;i<=steps;i++){
+    const px = (i/steps) * Wt;
+    const py = Ht * (0.72 + 0.04 * Math.sin((i + state.t*0.002)*1.6));
+    ctx.quadraticCurveTo(px - 20, py, px, Ht*0.7);
+  }
+  ctx.lineTo(Wt, Ht);
+  ctx.lineTo(0,Ht);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+// ---- Utilities ----
+function roundRect(ctx, x, y, w, h, r, fill=true, stroke=false){
+  const min = Math.min(w,h)/2;
+  if(r>min) r = min;
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+  if(fill) ctx.fill();
+  if(stroke) ctx.stroke();
+}
+
+// ---- Boot loop ----
+requestAnimationFrame(update);
+
+// ---- Minor polish: pulse score bubble when point earned ----
+let lastScoreChecked = 0;
+const origScale = 1;
+setInterval(()=>{
+  if(state.score !== lastScoreChecked){
+    // simple pop effect by animating scale via CSS
+    scoreBubble.animate([
+      { transform: 'scale(1)' },
+      { transform: 'scale(1.32)' },
+      { transform: 'scale(1)' }
+    ], { duration: 320, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    lastScoreChecked = state.score;
+  }
+}, 60);
+
+// Visual update tick for state.t (parallax)
+setInterval(()=> state.t += 16, 16);
+
+// ---- Helpful: ensure audio unlock on first user action for mobile ----
+['touchstart','mousedown','keydown'].forEach(evt=>{
+  window.addEventListener(evt, function unlock(){
+    ensureAudio();
+    try{ if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){}
+    window.removeEventListener(evt, unlock);
+  }, {passive:true});
+});
+
+// ---- Extra: keyboard shortcut to toggle mute for convenience ----
+window.addEventListener('keydown', (e)=>{
+  if(e.key === 'm' || e.key === 'M'){
+    state.mute = !state.mute;
+    muteBtn.textContent = state.mute ? '🔇' : '🔊';
+  }
+});
+
+// Start with start panel visible
+resetToMenu();
+
+</script>
+</body>
+</html>
