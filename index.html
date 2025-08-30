@@ -328,8 +328,11 @@ const orange = {
 // ---- Pipes generation ----
 function spawnPipe(){
   const minTop = 40;
-  const maxTop = H - config.groundHeight - config.pipeGap - 40;
-  const top = minTop + Math.random() * (Math.max(0, maxTop - minTop));
+  const maxTop = Math.max(minTop + 40, H - config.groundHeight - config.pipeGap - 40);
+
+  // pick random top within safe range
+  const top = Math.floor(minTop + Math.random() * (maxTop - minTop));
+
   const pipe = {
     x: W + config.pipeWidth,
     top: top,
@@ -338,6 +341,7 @@ function spawnPipe(){
   };
   state.pipes.push(pipe);
 }
+
 
 // ---- Game flow handlers ----
 function startGame(){
@@ -661,3 +665,4 @@ resetToMenu();
 </script>
 </body>
 </html>
+
